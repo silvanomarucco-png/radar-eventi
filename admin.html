@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Gestione · Radar Eventi</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <header class="border-b border-crinale bg-white">
+    <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <a href="/" class="font-display text-2xl font-extrabold">Radar Eventi <span class="font-sans text-base font-medium text-nebbia">gestione</span></a>
+      <div class="flex items-center gap-3">
+        <a href="/" target="_blank" class="text-sm font-semibold text-porfido underline-offset-4 hover:underline">Vedi il sito</a>
+        <button id="logout" class="btn-ghost hidden px-4 py-1.5 text-sm">Esci</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-4 pb-20 sm:px-6">
+    <section id="login" class="mx-auto mt-16 max-w-sm">
+      <h1 class="font-display text-4xl font-extrabold">Accedi</h1>
+      <p class="mt-2 text-nebbia">Solo gli account admin possono cambiare cosa vede il pubblico.</p>
+      <form id="loginForm" class="mt-6 grid gap-4">
+        <label class="grid gap-1 text-sm font-semibold">Email
+          <input id="email" type="email" autocomplete="username" required class="rounded-lg border border-crinale bg-white px-3 py-2.5 text-base font-normal">
+        </label>
+        <label class="grid gap-1 text-sm font-semibold">Password
+          <input id="pass" type="password" autocomplete="current-password" required class="rounded-lg border border-crinale bg-white px-3 py-2.5 text-base font-normal">
+        </label>
+        <button class="btn-primary mt-2 py-3">Accedi</button>
+        <p id="loginErr" class="min-h-5 text-sm text-porfido" role="alert"></p>
+      </form>
+    </section>
+
+    <div id="panel" class="hidden">
+      <nav class="sticky top-0 z-10 -mx-4 mt-6 flex gap-2 overflow-x-auto bg-calcare/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0" aria-label="Sezioni">
+        <a href="#settimane" class="chip shrink-0">Settimane visibili</a>
+        <a href="#avvisi" class="chip shrink-0">Avvisi prenotazione</a>
+        <a href="#prenotazioni" class="chip shrink-0">Eventi da prenotare</a>
+        <a href="#whatsapp" class="chip shrink-0">Testo WhatsApp</a>
+      </nav>
+
+      <section id="settimane" class="mt-8 scroll-mt-20">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 class="font-display text-3xl font-extrabold">Settimane visibili</h2>
+            <p class="mt-1 max-w-[60ch] text-nebbia">Il pubblico vede solo le settimane attive, da lunedì a domenica. Le settimane già finite spariscono da sole.</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="quick4" class="btn-ghost px-4 py-2 text-sm">Attiva le prossime 4</button>
+            <button id="clearWeeks" class="btn-ghost px-4 py-2 text-sm">Disattiva tutte</button>
+          </div>
+        </div>
+        <div id="weekList" class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3"></div>
+        <div class="mt-5 flex items-center gap-4">
+          <button id="saveWeeks" class="btn-primary">Salva settimane</button>
+          <p id="weekMsg" class="text-sm text-nebbia" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section id="avvisi" class="mt-14 scroll-mt-20">
+        <h2 class="font-display text-3xl font-extrabold">Avvisi prenotazione</h2>
+        <p class="mt-1 max-w-[60ch] text-nebbia">Valgono per gli eventi segnati come "da prenotare". L'avviso compare sul sito, nella sezione "Da prenotare adesso" e nel testo WhatsApp.</p>
+        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+          <label class="flex cursor-pointer items-start gap-4 rounded-2xl border border-crinale bg-white p-5 has-checked:border-abete">
+            <input id="alertMonth" type="checkbox" class="mt-1 size-5 accent-porfido">
+            <span>
+              <span class="tag bg-enrosadira text-porfido-scuro">Ultimo mese per prenotare</span>
+              <span class="mt-2 block text-[0.9375rem] text-nebbia">Da 30 a 16 giorni prima dell'evento.</span>
+            </span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-4 rounded-2xl border border-crinale bg-white p-5 has-checked:border-abete">
+            <input id="alertFortnight" type="checkbox" class="mt-1 size-5 accent-porfido">
+            <span>
+              <span class="tag bg-porfido text-white">Ultimi 15 giorni per prenotare</span>
+              <span class="mt-2 block text-[0.9375rem] text-nebbia">Dagli ultimi 15 giorni fino al giorno dell'evento.</span>
+            </span>
+          </label>
+        </div>
+        <p id="alertMsg" class="mt-3 min-h-5 text-sm text-nebbia" aria-live="polite"></p>
+      </section>
+
+      <section id="prenotazioni" class="mt-14 scroll-mt-20">
+        <h2 class="font-display text-3xl font-extrabold">Eventi da prenotare</h2>
+        <p class="mt-1 max-w-[60ch] text-nebbia">Spunta gli eventi che richiedono prenotazione. La modifica si salva subito.</p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <input id="evSearch" type="search" placeholder="Cerca titolo, luogo o comune" class="min-w-0 flex-1 rounded-full border border-crinale bg-white px-4 py-2.5">
+          <select id="evRange" class="rounded-full border border-crinale bg-white px-4 py-2.5">
+            <option value="30">Prossimi 30 giorni</option>
+            <option value="90" selected>Prossimi 90 giorni</option>
+            <option value="365">Prossimi 12 mesi</option>
+          </select>
+          <label class="flex items-center gap-2 text-sm font-medium"><input id="evOnly" type="checkbox" class="size-4 accent-porfido"> Solo da prenotare</label>
+        </div>
+        <p id="evCount" class="mt-3 text-sm text-nebbia"></p>
+        <ul id="evList" class="mt-2 divide-y divide-crinale border-y border-crinale"></ul>
+      </section>
+
+      <section id="whatsapp" class="mt-14 scroll-mt-20">
+        <h2 class="font-display text-3xl font-extrabold">Testo WhatsApp</h2>
+        <p class="mt-1 max-w-[60ch] text-nebbia">Prepara il messaggio di qualsiasi settimana, anche se non è ancora visibile sul sito.</p>
+        <div class="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div class="rounded-xl bg-[#EFEAE2] p-3"><div id="waPreview" class="wa-bubble max-h-[70vh] overflow-y-auto"></div></div>
+          <div class="grid content-start gap-3">
+            <label class="grid gap-1 text-sm font-semibold">Settimana
+              <select id="waWeek" class="rounded-lg border border-crinale bg-white px-3 py-2.5 text-base font-normal"></select>
+            </label>
+            <label class="grid gap-1 text-sm font-semibold">Zona
+              <select id="waZone" class="rounded-lg border border-crinale bg-white px-3 py-2.5 text-base font-normal"></select>
+            </label>
+            <button id="waCopy" class="btn-primary mt-2">Copia testo</button>
+            <a id="waOpen" target="_blank" rel="noopener" class="btn-ghost">Apri in WhatsApp</a>
+            <p id="waMsg" class="min-h-5 text-sm text-nebbia" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="/src/admin.js"></script>
+</body>
+</html>

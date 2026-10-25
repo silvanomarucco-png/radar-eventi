@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-calcare: #F4F5F2;     /* sfondo: calcare dolomitico, freddo */
+  --color-abete: #15302A;       /* testo: verde abete profondo */
+  --color-porfido: #8E2C38;     /* azione: porfido rosso di Bolzano */
+  --color-porfido-scuro: #6F1F2A;
+  --color-enrosadira: #F6C9BC;  /* evidenza: il rosa delle Dolomiti al tramonto */
+  --color-nebbia: #5B6B65;      /* testo secondario */
+  --color-crinale: #D6DCD7;     /* linee */
+  --color-whatsapp: #1F8F55;
+
+  --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; scroll-padding-top: 8rem; }
+  body { @apply overflow-x-clip bg-calcare text-abete font-sans antialiased; font-size: 1.0625rem; line-height: 1.55; }
+  :focus-visible { outline: 3px solid var(--color-porfido); outline-offset: 2px; border-radius: 4px; }
+  dialog::backdrop { background: rgb(21 48 42 / .55); }
+  ::selection { background: var(--color-enrosadira); }
+}
+
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-semibold transition-colors disabled:opacity-50; }
+@utility btn-primary { @apply btn bg-porfido text-white hover:bg-porfido-scuro; }
+@utility btn-ghost { @apply btn border border-abete/25 hover:border-abete; }
+@utility btn-wa { @apply btn bg-whatsapp text-white hover:brightness-95; }
+@utility chip { @apply rounded-full border border-crinale bg-white px-3.5 py-1.5 text-sm font-medium transition-colors hover:border-abete aria-pressed:border-abete aria-pressed:bg-abete aria-pressed:text-white; }
+@utility tag { @apply inline-flex items-center rounded-md px-2 py-0.5 text-[0.8125rem] font-medium; }
+@utility wa-bubble { @apply rounded-2xl rounded-tl-sm bg-[#E7F6DF] p-4 text-[0.9375rem] leading-relaxed whitespace-pre-wrap break-words text-[#111B21] shadow-sm; }
+.wa-bubble a { @apply text-[#027EB5] underline; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Unico momento animato: la data della settimana entra al cambio settimana */
+@keyframes rise { from { opacity: 0; transform: translateY(.25em); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
