@@ -1,20 +1,18 @@
-import { sb, loadSettings, loadEvents, DEFAULT_ALERTS } from './lib/supabase.js';
+import { sb, loadSettings, loadEvents, DEFAULT_ALERTS, DEFAULT_WEEKS } from './lib/supabase.js';
 import {
-  parseDay, isoDay, addDays, today, mondayOf, daysUntil, hhmm,
-  weekdayShort, dayLong, cap, weekRange, weekLabel,
+  parseDay, isoDay, addDays, today, daysUntil, hhmm,
+  weekdayShort, dayLong, cap, weekRange, weekStarts,
 } from './lib/dates.js';
 import { CAT, ZONE, esc, bookingNotice, placeOf, groupByDay } from './lib/events.js';
-import { buildWhatsAppText, waPreviewHtml, copyText } from './lib/whatsapp.js';
 
 // Link "Password dimenticata?" arrivato sulla home (Site URL di Supabase): lo passo alla pagina admin
 if (/type=recovery|error_description/.test(location.hash)) location.replace(`/admin.html${location.hash}`);
 
 const $ = (id) => document.getElementById(id);
-const SITE_URL = location.origin + location.pathname.replace(/index\.html$/, '');
 
 const state = {
-  weeks: [],                 // lunedì (ISO) visibili
-  week: null,                // settimana selezionata
+  weeks: [],                 // primo giorno (ISO) di ogni blocco di 7 giorni visibile, a partire da oggi
+  week: null,                // blocco selezionato
   alerts: DEFAULT_ALERTS,
   all: [],                   // eventi caricati (tutte le settimane visibili + prossimi 30 giorni)
   zone: '',
@@ -26,14 +24,11 @@ const state = {
 
 async function init() {
   try {
-    const s = await loadSettings().catch(() => ({ visibleWeeks: [], alerts: DEFAULT_ALERTS }));
+    const s = await loadSettings().catch(() => ({ weeksAhead: DEFAULT_WEEKS, alerts: DEFAULT_ALERTS }));
     state.alerts = s.alerts;
-    const thisMonday = isoDay(mondayOf(today()));
-    // Mostra solo le settimane scelte dall'admin che non sono ancora finite
-    state.weeks = s.visibleWeeks.filter((w) => addDays(parseDay(w), 6) >= today());
-    if (!state.weeks.length) state.weeks = [thisMonday];
+    state.weeks = weekStarts(s.weeksAhead);
 
-    const from = [state.weeks[0], isoDay(today())].sort()[0];
+    const from = state.weeks[0];
     const to = [isoDay(addDays(parseDay(state.weeks.at(-1)), 6)), isoDay(addDays(today(), 30))].sort().at(-1);
     state.all = await loadEvents(from, to).catch(async () => {
       // Se la vista del nuovo sito non è ancora stata creata, usa quella esistente
@@ -43,8 +38,7 @@ async function init() {
     });
     state.lastScan = state.all[0]?.last_scan || null;
 
-    const asked = new URLSearchParams(location.search).get('settimana');
-    state.week = state.weeks.includes(asked) ? asked : (state.weeks.includes(thisMonday) ? thisMonday : state.weeks[0]);
+    state.week = state.weeks[0];
 
     renderWeekTabs();
     renderFilters();
@@ -68,15 +62,14 @@ function weekEvents({ filtered = true } = {}) {
 /* ---------- Render ---------- */
 
 function renderWeekTabs() {
-  $('weeks').innerHTML = state.weeks.map((w) => `
+  // Con una sola settimana i pulsanti non servono
+  $('weeks').hidden = state.weeks.length < 2;
+  $('weeks').innerHTML = state.weeks.map((w, i) => `
     <button data-week="${w}" aria-pressed="${w === state.week}" class="chip shrink-0 whitespace-nowrap">
-      ${esc(weekLabel(w))}
+      ${i === 0 ? 'Prossimi 7 giorni' : esc(weekRange(w))}
     </button>`).join('');
   $('weeks').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
     state.week = b.dataset.week;
-    const url = new URL(location.href);
-    url.searchParams.set('settimana', state.week);
-    history.replaceState(null, '', url);
     $('weeks').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
     renderWeek(true);
   }));
@@ -110,7 +103,7 @@ function renderWeek(animate = false) {
   const toBook = list.filter((e) => bookingNotice(e, state.alerts)).length;
   const comuni = new Set(list.map((e) => e.comune).filter(Boolean)).size;
   const parts = [];
-  if (!total) parts.push('Il programma di questa settimana non è ancora disponibile.');
+  if (!total) parts.push('Il programma di questi giorni non è ancora disponibile.');
   else {
     parts.push(list.length === total
       ? `${total} eventi in ${comuni} ${comuni === 1 ? 'comune' : 'comuni'}.`
@@ -125,7 +118,6 @@ function renderWeek(animate = false) {
 
   renderDayStrip(list);
   renderDays(list);
-  renderShare(list);
 }
 
 function renderDayStrip(list) {
@@ -165,7 +157,7 @@ function renderDays(list) {
     const filtered = state.zone || state.cat;
     box.innerHTML = `
       <div class="rounded-2xl border border-dashed border-crinale p-8 text-center">
-        <p class="text-lg">${filtered ? 'Nessun evento con questi filtri.' : 'Nessun evento in questa settimana.'}</p>
+        <p class="text-lg">${filtered ? 'Nessun evento con questi filtri.' : 'Nessun evento in questi giorni.'}</p>
         ${filtered ? '<button id="resetFilters" class="btn-ghost mt-4">Mostra tutti gli eventi</button>' : ''}
       </div>`;
     $('resetFilters')?.addEventListener('click', () => { state.zone = ''; state.cat = ''; renderFilters(); renderWeek(); });
@@ -226,38 +218,6 @@ function renderBookingRail() {
     b.addEventListener('click', () => openEvent(state.all.find((e) => e.id === b.dataset.id))));
 }
 
-/* ---------- WhatsApp ---------- */
-
-let shareText = '';
-
-function renderShare(list) {
-  const zoneName = state.zone ? ZONE[state.zone] : null;
-  const catName = state.cat ? CAT[state.cat] : null;
-  const title = ['Eventi', catName && `· ${catName}`, zoneName ? `a ${zoneName}` : 'in Alto Adige'].filter(Boolean).join(' ');
-  const url = new URL(SITE_URL);
-  url.searchParams.set('settimana', state.week);
-  shareText = buildWhatsAppText({ monday: state.week, events: list, alerts: state.alerts, siteUrl: url.toString(), title });
-  const tooLong = encodeURIComponent(shareText).length > 7000;
-
-  document.querySelectorAll('[data-share-panel]').forEach((panel) => {
-    panel.innerHTML = `
-      <div class="mt-4 rounded-xl bg-[#EFEAE2] p-3">
-        <div class="wa-bubble max-h-[46vh] overflow-y-auto">${waPreviewHtml(shareText)}</div>
-      </div>
-      <div class="mt-4 grid gap-2">
-        <button data-copy class="btn-primary w-full">Copia testo</button>
-        ${tooLong ? '' : `<a class="btn-ghost w-full" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(shareText)}">Apri in WhatsApp</a>`}
-      </div>
-      <p data-copied class="mt-2 min-h-5 text-center text-sm text-nebbia" aria-live="polite">${list.length} eventi${tooLong ? ' · testo lungo: usa Copia testo' : ''}</p>`;
-    panel.querySelector('[data-copy]').addEventListener('click', async (e) => {
-      const ok = await copyText(shareText);
-      const btn = e.currentTarget;
-      btn.textContent = ok ? 'Testo copiato' : 'Copia non riuscita';
-      setTimeout(() => (btn.textContent = 'Copia testo'), 2200);
-    });
-  });
-}
-
 /* ---------- Dialoghi ---------- */
 
 function openEvent(ev) {
@@ -278,14 +238,11 @@ function openEvent(ev) {
     link.href = ev.link;
     link.textContent = ev.booking_required ? 'Prenota sulla pagina dell’evento' : 'Apri la pagina dell’evento';
   }
-  const single = `*${ev.title}*\n${cap(dayLong(d))}${ev.time ? ', ore ' + hhmm(ev.time) : ''}\n📍 ${placeOf(ev)}${ev.link ? '\n🔗 ' + ev.link : ''}`;
-  $('evWa').href = `https://wa.me/?text=${encodeURIComponent(single)}`;
   $('eventDialog').showModal();
 }
 
 document.querySelectorAll('dialog').forEach((dlg) => {
   dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
 });
-['openShare', 'openShareBar'].forEach((id) => $(id).addEventListener('click', () => $('shareDialog').showModal()));
 
 init();

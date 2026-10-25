@@ -8,13 +8,16 @@ const KEY = import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_ilIYL44z1gP7rM1
 export const sb = createClient(URL, KEY);
 
 export const DEFAULT_ALERTS = { month: true, fortnight: true };
+export const DEFAULT_WEEKS = 1;
+export const MAX_WEEKS = 8;
 
 export async function loadSettings() {
   const { data, error } = await sb.from('app_settings').select('key,value');
   if (error) throw error;
   const map = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
   return {
-    visibleWeeks: Array.isArray(map.visible_weeks) ? [...map.visible_weeks].sort() : [],
+    // Settimane da mostrare, contate in blocchi di 7 giorni a partire da oggi
+    weeksAhead: Math.min(MAX_WEEKS, Math.max(1, Number(map.weeks_ahead) || DEFAULT_WEEKS)),
     alerts: { ...DEFAULT_ALERTS, ...(map.booking_alerts || {}) },
   };
 }

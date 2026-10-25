@@ -6,6 +6,8 @@ del Radar (`radar-concerti-alto-adige`), con un pannello admin e il testo pronto
 - `/` sito pubblico
 - `/admin` gestione (settimane visibili, avvisi di prenotazione, eventi da prenotare, testo WhatsApp)
 
+Il testo WhatsApp si prepara solo in `/admin`; il sito pubblico non lo mostra.
+
 Stack: Vite + Tailwind CSS 4 + JavaScript senza framework + `@supabase/supabase-js`.
 
 ## Avvio locale
@@ -40,11 +42,11 @@ npm run build      # genera dist/
 
 | Cosa | Dove |
 | --- | --- |
-| Scegliere le settimane visibili | `/admin` › Settimane visibili › Salva. Le settimane finite spariscono da sole; senza settimane attive il sito mostra quella corrente. |
+| Scegliere quante settimane mostrare | `/admin` › Settimane visibili › scegli da 1 a 8 › Salva. Il sito mostra blocchi di 7 giorni a partire da oggi (predefinito: 1). |
 | Accendere/spegnere gli avvisi | `/admin` › Avvisi prenotazione. "Ultimo mese" (30–16 giorni) e "Ultimi 15 giorni" si attivano separatamente e si salvano subito. |
 | Segnare un evento da prenotare | `/admin` › Eventi da prenotare › spunta. |
 | Password dimenticata | `/admin` › scrivi l'email › "Password dimenticata?". Il link dell'email apre la pagina per scegliere la nuova password. |
-| Testo WhatsApp | Sul sito: pannello "Manda il programma" (segue settimana e filtri). In admin: qualsiasi settimana, anche non ancora pubblica. |
+| Testo WhatsApp | Solo in `/admin` › Testo WhatsApp: scegli settimana e zona, poi Copia testo. |
 
 Formato del testo: `*grassetto*` e `_corsivo_` di WhatsApp, un blocco per giorno, link su riga
 propria (WhatsApp li rende cliccabili), avviso di prenotazione se attivo, link al sito in fondo.
@@ -57,8 +59,6 @@ propria (WhatsApp li rende cliccabili), avviso di prenotazione se attivo, link a
   rimasti in grande: è l'azione che, se rimandata, si perde.
 - **Orientarsi in un colpo d'occhio.** Striscia dei 7 giorni con il numero di eventi, filtri per zona e
   genere sempre in alto; orari allineati in colonna per scorrere la giornata.
-- **Condivisione come azione principale su mobile.** Barra fissa "Copia il programma per WhatsApp"
-  e anteprima a forma di messaggio, così si vede il risultato prima di incollarlo.
 - **Gerarchia tipografica.** Display condensato solo per date e titoli di sezione; Instrument Sans per
   il testo (17px, interlinea 1,55, righe sotto gli 80 caratteri).
 - **Palette dal territorio.** Calcare `#F4F5F2`, abete `#15302A`, porfido `#8E2C38`,

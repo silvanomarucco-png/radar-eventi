@@ -5,8 +5,8 @@ import { bookingNotice, groupByDay, placeOf } from './events.js';
  * Testo formattato per WhatsApp (*grassetto*, _corsivo_). Un evento per blocco, link su riga propria
  * così WhatsApp genera l'anteprima e il link resta cliccabile.
  */
-export function buildWhatsAppText({ monday, events, alerts, siteUrl, title = 'Eventi in Alto Adige' }) {
-  const start = parseDay(monday);
+export function buildWhatsAppText({ start: first, events, alerts, siteUrl, title = 'Eventi in Alto Adige' }) {
+  const start = parseDay(first);
   const lines = [`*${title}*`, `_${ddmm(start)} – ${ddmm(addDays(start, 6))}_`, ''];
   const days = groupByDay(events);
   if (!days.length) lines.push('Nessun evento in programma questa settimana.');

@@ -1,11 +1,11 @@
-import { sb, loadSettings, loadEvents, DEFAULT_ALERTS } from './lib/supabase.js';
-import { parseDay, isoDay, addDays, today, mondayOf, hhmm, dayLong, cap, weekRange, weekLabel } from './lib/dates.js';
+import { sb, loadSettings, loadEvents, DEFAULT_ALERTS, DEFAULT_WEEKS, MAX_WEEKS } from './lib/supabase.js';
+import { parseDay, isoDay, addDays, today, hhmm, dayLong, cap, weekRange, weekStarts } from './lib/dates.js';
 import { ZONE, esc, placeOf } from './lib/events.js';
 import { buildWhatsAppText, waPreviewHtml, copyText } from './lib/whatsapp.js';
 
 const $ = (id) => document.getElementById(id);
-const WEEKS_AHEAD = 16;
-let settings = { visibleWeeks: [], alerts: DEFAULT_ALERTS };
+let settings = { weeksAhead: DEFAULT_WEEKS, alerts: DEFAULT_ALERTS };
+let pickedWeeks = DEFAULT_WEEKS;
 let horizon = [];   // eventi da oggi a 12 mesi: usati per conteggi, prenotazioni e WhatsApp
 
 const flash = (el, text) => { el.textContent = text; clearTimeout(el._t); el._t = setTimeout(() => (el.textContent = ''), 3500); };
@@ -26,7 +26,8 @@ async function enter() {
   $('logout').classList.remove('hidden');
 
   settings = await loadSettings();
-  const start = isoDay(addDays(mondayOf(today()), -7));
+  pickedWeeks = settings.weeksAhead;
+  const start = isoDay(today());
   horizon = await loadEvents(start, isoDay(addDays(today(), 365)));
 
   renderWeeks();
@@ -94,46 +95,36 @@ sb.auth.getSession().then(({ data }) => {
 
 /* ---------- Settimane ---------- */
 
-function mondays() {
-  const first = mondayOf(today());
-  return Array.from({ length: WEEKS_AHEAD }, (_, i) => isoDay(addDays(first, i * 7)));
-}
-
-function countIn(monday) {
-  const end = isoDay(addDays(parseDay(monday), 6));
-  return horizon.filter((e) => e.date >= monday && e.date <= end).length;
+function countIn(first) {
+  const end = isoDay(addDays(parseDay(first), 6));
+  return horizon.filter((e) => e.date >= first && e.date <= end).length;
 }
 
 function renderWeeks() {
-  const selected = new Set(settings.visibleWeeks);
-  $('weekList').innerHTML = mondays().map((w) => {
-    const n = countIn(w);
-    return `
-      <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-crinale bg-white px-4 py-3 has-checked:border-abete has-checked:ring-1 has-checked:ring-abete">
-        <input type="checkbox" value="${w}" ${selected.has(w) ? 'checked' : ''} class="size-5 accent-porfido">
-        <span class="min-w-0 flex-1">
-          <span class="block font-display text-xl font-extrabold leading-tight">${esc(weekRange(w))}</span>
-          <span class="block text-sm text-nebbia">${esc(weekLabel(w) === weekRange(w) ? '' : weekLabel(w) + ' · ')}${n ? `${n} eventi` : 'nessun evento ancora'}</span>
-        </span>
-      </label>`;
-  }).join('');
+  $('weeksPicker').innerHTML = Array.from({ length: MAX_WEEKS }, (_, i) => i + 1).map((n) => `
+    <button type="button" role="radio" data-n="${n}" aria-checked="${n === pickedWeeks}" aria-pressed="${n === pickedWeeks}"
+      class="chip min-w-12 text-base">${n}</button>`).join('');
+  const starts = weekStarts(pickedWeeks);
+  const last = addDays(parseDay(starts.at(-1)), 6);
+  const total = starts.reduce((sum, w) => sum + countIn(w), 0);
+  const saved = pickedWeeks === settings.weeksAhead;
+  $('weeksPreview').textContent = `${pickedWeeks === 1 ? '1 settimana' : `${pickedWeeks} settimane`}: oggi fino a ${dayLong(last)}, ${total} eventi.`
+    + (saved ? ' È l’impostazione attuale del sito.' : ' Non ancora salvato.');
 }
 
-$('quick4').addEventListener('click', () => {
-  const next = new Set(mondays().slice(0, 4));
-  $('weekList').querySelectorAll('input').forEach((i) => (i.checked = i.checked || next.has(i.value)));
+$('weeksPicker').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-n]'); if (!b) return;
+  pickedWeeks = Number(b.dataset.n);
+  renderWeeks();
 });
-$('clearWeeks').addEventListener('click', () => $('weekList').querySelectorAll('input').forEach((i) => (i.checked = false)));
 
 $('saveWeeks').addEventListener('click', async () => {
-  const values = [...$('weekList').querySelectorAll('input:checked')].map((i) => i.value).sort();
-  const { error } = await sb.from('app_settings').upsert({ key: 'visible_weeks', value: values, updated_at: new Date().toISOString() });
+  const { error } = await sb.from('app_settings').upsert({ key: 'weeks_ahead', value: pickedWeeks, updated_at: new Date().toISOString() });
   if (error) return flash($('weekMsg'), `Settimane non salvate: ${error.message}`);
-  settings.visibleWeeks = values;
-  flash($('weekMsg'), values.length
-    ? `Salvate. Il sito mostra ${values.length} ${values.length === 1 ? 'settimana' : 'settimane'}.`
-    : 'Salvate. Senza settimane attive il sito mostra solo la settimana corrente.');
+  settings.weeksAhead = pickedWeeks;
+  renderWeeks();
   initWhatsApp();
+  flash($('weekMsg'), `Salvato. Il sito mostra ${pickedWeeks === 1 ? '1 settimana' : `${pickedWeeks} settimane`} da oggi.`);
 });
 
 /* ---------- Avvisi ---------- */
@@ -197,24 +188,21 @@ $('evList').addEventListener('change', async (e) => {
 let waText = '';
 
 function initWhatsApp() {
-  const visible = new Set(settings.visibleWeeks);
-  $('waWeek').innerHTML = mondays().map((w) =>
-    `<option value="${w}">${esc(weekRange(w))}${visible.has(w) ? '' : ' (non visibile)'}</option>`).join('');
+  $('waWeek').innerHTML = weekStarts(MAX_WEEKS).map((w, i) =>
+    `<option value="${w}">${esc(weekRange(w))}${i < settings.weeksAhead ? '' : ' (non visibile sul sito)'}</option>`).join('');
   $('waZone').innerHTML = [['', 'Tutte le zone'], ...Object.entries(ZONE)].map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
   renderWhatsApp();
 }
 
 function renderWhatsApp() {
-  const monday = $('waWeek').value;
-  if (!monday) return;
+  const first = $('waWeek').value;
+  if (!first) return;
   const zone = $('waZone').value;
-  const end = isoDay(addDays(parseDay(monday), 6));
-  const events = horizon.filter((e) => e.date >= monday && e.date <= end && (!zone || e.zone === zone));
-  const site = new URL('/', location.origin);
-  site.searchParams.set('settimana', monday);
+  const end = isoDay(addDays(parseDay(first), 6));
+  const events = horizon.filter((e) => e.date >= first && e.date <= end && (!zone || e.zone === zone));
   waText = buildWhatsAppText({
-    monday, events, alerts: settings.alerts,
-    siteUrl: settings.visibleWeeks.includes(monday) ? site.toString() : location.origin + '/',
+    start: first, events, alerts: settings.alerts,
+    siteUrl: location.origin + '/',
     title: zone ? `Eventi a ${ZONE[zone]}` : 'Eventi in Alto Adige',
   });
   $('waPreview').innerHTML = waPreviewHtml(waText);

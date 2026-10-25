@@ -64,17 +64,12 @@
       </nav>
 
       <section id="settimane" class="mt-8 scroll-mt-20">
-        <div class="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 class="font-display text-3xl font-extrabold">Settimane visibili</h2>
-            <p class="mt-1 max-w-[60ch] text-nebbia">Il pubblico vede solo le settimane attive, da lunedì a domenica. Le settimane già finite spariscono da sole.</p>
-          </div>
-          <div class="flex gap-2">
-            <button id="quick4" class="btn-ghost px-4 py-2 text-sm">Attiva le prossime 4</button>
-            <button id="clearWeeks" class="btn-ghost px-4 py-2 text-sm">Disattiva tutte</button>
-          </div>
+        <h2 class="font-display text-3xl font-extrabold">Settimane visibili</h2>
+        <p class="mt-1 max-w-[60ch] text-nebbia">Quanti blocchi di 7 giorni mostra il sito, contando da oggi. Il periodo avanza da solo ogni giorno.</p>
+        <div class="mt-5 flex flex-wrap items-center gap-4">
+          <div id="weeksPicker" class="flex flex-wrap gap-2" role="radiogroup" aria-label="Settimane da mostrare"></div>
         </div>
-        <div id="weekList" class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3"></div>
+        <p id="weeksPreview" class="mt-4 text-[0.9375rem] text-nebbia"></p>
         <div class="mt-5 flex items-center gap-4">
           <button id="saveWeeks" class="btn-primary">Salva settimane</button>
           <p id="weekMsg" class="text-sm text-nebbia" aria-live="polite"></p>
@@ -121,7 +116,7 @@
 
       <section id="whatsapp" class="mt-14 scroll-mt-20">
         <h2 class="font-display text-3xl font-extrabold">Testo WhatsApp</h2>
-        <p class="mt-1 max-w-[60ch] text-nebbia">Prepara il messaggio di qualsiasi settimana, anche se non è ancora visibile sul sito.</p>
+        <p class="mt-1 max-w-[60ch] text-nebbia">Il messaggio con gli eventi della settimana e i link, da copiare nel gruppo. Puoi prepararlo anche per settimane non ancora visibili sul sito.</p>
         <div class="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div class="rounded-xl bg-[#EFEAE2] p-3"><div id="waPreview" class="wa-bubble max-h-[70vh] overflow-y-auto"></div></div>
           <div class="grid content-start gap-3">
