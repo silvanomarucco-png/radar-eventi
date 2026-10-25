@@ -33,6 +33,8 @@ npm run build      # genera dist/
    altrimenti usa i valori in `src/lib/supabase.js` (la chiave publishable è pubblica, i dati
    sono protetti dalle policy RLS).
 4. Supabase › Authentication › URL Configuration: aggiungi l'indirizzo Netlify come Site URL.
+   In **Redirect URLs** aggiungi anche `https://TUO-SITO.netlify.app/admin.html`: serve al link
+   "Password dimenticata?" della pagina admin.
 
 ## Come si usa
 
@@ -41,6 +43,7 @@ npm run build      # genera dist/
 | Scegliere le settimane visibili | `/admin` › Settimane visibili › Salva. Le settimane finite spariscono da sole; senza settimane attive il sito mostra quella corrente. |
 | Accendere/spegnere gli avvisi | `/admin` › Avvisi prenotazione. "Ultimo mese" (30–16 giorni) e "Ultimi 15 giorni" si attivano separatamente e si salvano subito. |
 | Segnare un evento da prenotare | `/admin` › Eventi da prenotare › spunta. |
+| Password dimenticata | `/admin` › scrivi l'email › "Password dimenticata?". Il link dell'email apre la pagina per scegliere la nuova password. |
 | Testo WhatsApp | Sul sito: pannello "Manda il programma" (segue settimana e filtri). In admin: qualsiasi settimana, anche non ancora pubblica. |
 
 Formato del testo: `*grassetto*` e `_corsivo_` di WhatsApp, un blocco per giorno, link su riga

@@ -36,6 +36,23 @@
         <button class="btn-primary mt-2 py-3">Accedi</button>
         <p id="loginErr" class="min-h-5 text-sm text-porfido" role="alert"></p>
       </form>
+      <button id="forgot" type="button" class="text-sm font-semibold text-porfido underline-offset-4 hover:underline">Password dimenticata?</button>
+      <p id="forgotMsg" class="mt-2 min-h-5 text-sm text-nebbia" aria-live="polite"></p>
+    </section>
+
+    <section id="reset" class="mx-auto mt-16 hidden max-w-sm">
+      <h1 class="font-display text-4xl font-extrabold">Nuova password</h1>
+      <p class="mt-2 text-nebbia">Scegli una password di almeno 8 caratteri.</p>
+      <form id="resetForm" class="mt-6 grid gap-4">
+        <label class="grid gap-1 text-sm font-semibold">Nuova password
+          <input id="newPass" type="password" autocomplete="new-password" minlength="8" required class="rounded-lg border border-crinale bg-white px-3 py-2.5 text-base font-normal">
+        </label>
+        <label class="grid gap-1 text-sm font-semibold">Ripeti la password
+          <input id="newPass2" type="password" autocomplete="new-password" minlength="8" required class="rounded-lg border border-crinale bg-white px-3 py-2.5 text-base font-normal">
+        </label>
+        <button class="btn-primary mt-2 py-3">Salva password</button>
+        <p id="resetErr" class="min-h-5 text-sm text-porfido" role="alert"></p>
+      </form>
     </section>
 
     <div id="panel" class="hidden">

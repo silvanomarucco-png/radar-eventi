@@ -6,6 +6,9 @@ import {
 import { CAT, ZONE, esc, bookingNotice, placeOf, groupByDay } from './lib/events.js';
 import { buildWhatsAppText, waPreviewHtml, copyText } from './lib/whatsapp.js';
 
+// Link "Password dimenticata?" arrivato sulla home (Site URL di Supabase): lo passo alla pagina admin
+if (/type=recovery|error_description/.test(location.hash)) location.replace(`/admin.html${location.hash}`);
+
 const $ = (id) => document.getElementById(id);
 const SITE_URL = location.origin + location.pathname.replace(/index\.html$/, '');
 

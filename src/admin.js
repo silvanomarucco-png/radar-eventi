@@ -43,7 +43,52 @@ $('loginForm').addEventListener('submit', async (e) => {
   enter();
 });
 $('logout').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
-sb.auth.getSession().then(({ data }) => { if (data.session) enter(); });
+
+/* ---------- Password dimenticata ---------- */
+
+// Letto subito: il client Supabase ripulisce l'hash dopo averlo usato
+const urlHash = new URLSearchParams(location.hash.slice(1));
+let recovering = urlHash.get('type') === 'recovery';
+if (urlHash.get('error_description')) {
+  $('loginErr').textContent = 'Il link non è più valido. Chiedine uno nuovo con "Password dimenticata?".';
+}
+
+function showReset() {
+  recovering = true;
+  $('login').classList.add('hidden');
+  $('panel').classList.add('hidden');
+  $('reset').classList.remove('hidden');
+  $('newPass').focus();
+}
+
+$('forgot').addEventListener('click', async () => {
+  const email = $('email').value.trim();
+  if (!email) { $('forgotMsg').textContent = 'Scrivi prima la tua email nel campo qui sopra.'; $('email').focus(); return; }
+  $('forgot').disabled = true;
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/admin.html` });
+  $('forgot').disabled = false;
+  $('forgotMsg').textContent = error
+    ? `Email non inviata: ${error.message}`
+    : `Se ${email} è un account admin, riceverai un'email con il link per scegliere una nuova password.`;
+});
+
+$('resetForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pass = $('newPass').value;
+  if (pass !== $('newPass2').value) { $('resetErr').textContent = 'Le due password non coincidono.'; return; }
+  const { error } = await sb.auth.updateUser({ password: pass });
+  if (error) { $('resetErr').textContent = `Password non salvata: ${error.message}`; return; }
+  recovering = false;
+  $('reset').classList.add('hidden');
+  history.replaceState(null, '', location.pathname);
+  enter();
+});
+
+sb.auth.onAuthStateChange((event) => { if (event === 'PASSWORD_RECOVERY') showReset(); });
+sb.auth.getSession().then(({ data }) => {
+  if (recovering && data.session) showReset();
+  else if (data.session) enter();
+});
 
 /* ---------- Settimane ---------- */
 
