@@ -4,6 +4,7 @@ Agenda settimanale degli eventi a Bolzano, Merano e dintorni. Legge lo stesso da
 del Radar (`radar-concerti-alto-adige`), con un pannello admin e il testo pronto per WhatsApp.
 
 - `/` sito pubblico
+- `/classifica` gli eventi con più mi piace
 - `/admin` gestione (settimane visibili, avvisi di prenotazione, eventi da prenotare, testo WhatsApp)
 
 Il testo WhatsApp si prepara solo in `/admin`; il sito pubblico non lo mostra.
@@ -25,7 +26,9 @@ npm run build      # genera dist/
    vista `events_site`. La vista `events_app` usata dall'app esistente non viene toccata.
 2. Aggiungi la tua email agli admin:
    `insert into public.admins (email) values ('tua@email.it');`
-3. Authentication › Users › Add user: crea l'utente con la stessa email e una password.
+3. Per i mi piace esegui anche `supabase/likes.sql` (tabella `event_likes` e funzioni
+   `likes_for`, `toggle_like`, `top_events`).
+4. Authentication › Users › Add user: crea l'utente con la stessa email e una password.
 
 ## Deploy su Netlify
 
@@ -46,6 +49,7 @@ npm run build      # genera dist/
 | Accendere/spegnere gli avvisi | `/admin` › Avvisi prenotazione. "Ultimo mese" (30–16 giorni) e "Ultimi 15 giorni" si attivano separatamente e si salvano subito. |
 | Segnare un evento da prenotare | `/admin` › Eventi da prenotare › spunta. |
 | Password dimenticata | `/admin` › scrivi l'email › "Password dimenticata?". Il link dell'email apre la pagina per scegliere la nuova password. |
+| Mi piace | Sul sito, il cuore accanto a ogni evento (e nella scheda). Un voto per evento per browser; si toglie toccandolo di nuovo. Classifica in `/classifica`. |
 | Testo WhatsApp | Solo in `/admin` › Testo WhatsApp: scegli settimana e zona, poi Copia testo. |
 
 Formato del testo: `*grassetto*` e `_corsivo_` di WhatsApp, un blocco per giorno, link su riga

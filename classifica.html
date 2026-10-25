@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>I più votati · Radar Eventi</title>
+  <meta name="description" content="Gli eventi di Bolzano, Merano e dintorni che hanno ricevuto più mi piace.">
+  <meta name="theme-color" content="#F4F5F2">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <header class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-5 sm:px-6">
+    <a href="/" class="flex items-baseline gap-2">
+      <span class="font-display text-2xl font-extrabold tracking-tight">Radar Eventi</span>
+      <span class="hidden text-sm text-nebbia sm:inline">Bolzano, Merano e dintorni</span>
+    </a>
+    <a href="/" class="btn-ghost px-4 py-2 text-sm">Torna all'agenda</a>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+    <section class="pt-8 sm:pt-12" aria-labelledby="title">
+      <h1 id="title" class="font-display text-[clamp(3.75rem,15vw,10rem)] font-black leading-[0.92] tracking-[-0.01em] text-porfido">I più votati</h1>
+      <p id="summary" class="mt-6 max-w-[50ch] text-lg text-nebbia sm:text-xl">Carico la classifica…</p>
+      <div class="mt-6 flex gap-2" role="group" aria-label="Periodo">
+        <button data-period="next" aria-pressed="true" class="chip">In programma</button>
+        <button data-period="all" aria-pressed="false" class="chip">Da sempre</button>
+      </div>
+    </section>
+
+    <div class="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <section aria-labelledby="rankTitle" class="min-w-0">
+        <h2 id="rankTitle" class="sr-only">Classifica degli eventi</h2>
+        <ol id="ranking" class="divide-y divide-crinale border-y border-crinale"></ol>
+      </section>
+      <aside aria-labelledby="catTitle" class="min-w-0">
+        <h2 id="catTitle" class="font-display text-3xl font-extrabold">Per genere</h2>
+        <p class="mt-1 text-[0.9375rem] text-nebbia">Mi piace sommati per tipo di evento.</p>
+        <ul id="byCat" class="mt-5 grid gap-3"></ul>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="mx-auto max-w-6xl border-t border-crinale px-4 py-8 text-sm text-nebbia sm:px-6">
+    <p>Ogni browser può dare un solo mi piace per evento. La classifica conta i voti di tutti i visitatori.</p>
+  </footer>
+
+  <script type="module" src="/src/classifica.js"></script>
+</body>
+</html>

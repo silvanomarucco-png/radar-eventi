@@ -4,6 +4,7 @@ import {
   weekdayShort, dayLong, cap, weekRange, weekStarts,
 } from './lib/dates.js';
 import { CAT, ZONE, esc, bookingNotice, placeOf, groupByDay } from './lib/events.js';
+import { loadLikes, toggleLike, heartSvg } from './lib/likes.js';
 
 // Link "Password dimenticata?" arrivato sulla home (Site URL di Supabase): lo passo alla pagina admin
 if (/type=recovery|error_description/.test(location.hash)) location.replace(`/admin.html${location.hash}`);
@@ -18,6 +19,8 @@ const state = {
   zone: '',
   cat: '',
   lastScan: null,
+  likes: {},                 // id evento -> { likes, liked }
+  likesOn: true,             // false se il database dei voti non risponde: i cuori spariscono
 };
 
 /* ---------- Caricamento ---------- */
@@ -37,6 +40,7 @@ async function init() {
       return data;
     });
     state.lastScan = state.all[0]?.last_scan || null;
+    state.likes = await loadLikes(state.all.map((e) => e.id)).catch(() => { state.likesOn = false; return {}; });
 
     state.week = state.weeks[0];
 
@@ -181,10 +185,47 @@ function renderDays(list) {
     b.addEventListener('click', () => openEvent(state.all.find((e) => e.id === b.dataset.id))));
 }
 
+/* ---------- Mi piace ---------- */
+
+function likeButton(ev, extra = '') {
+  if (!state.likesOn) return '';
+  const { likes = 0, liked = false } = state.likes[ev.id] || {};
+  return `
+    <button type="button" data-like="${esc(ev.id)}" data-extra="${extra}" aria-pressed="${liked}"
+      aria-label="${liked ? 'Togli il mi piace' : 'Mi piace'}: ${likes}"
+      class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums transition-colors ${liked ? 'bg-enrosadira/60 text-porfido' : 'text-nebbia hover:bg-white hover:text-porfido'} ${extra}">
+      ${heartSvg(liked)}<span>${likes || ''}</span>
+    </button>`;
+}
+
+function refreshLike(id) {
+  const ev = state.all.find((e) => e.id === id);
+  document.querySelectorAll(`[data-like="${CSS.escape(id)}"]`).forEach((b) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = likeButton(ev, b.dataset.extra);
+    const fresh = tmp.firstElementChild;
+    const hadFocus = document.activeElement === b;
+    b.replaceWith(fresh);
+    if (hadFocus) fresh.focus();
+  });
+}
+
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-like]'); if (!b) return;
+  const id = b.dataset.like;
+  const before = state.likes[id] || { likes: 0, liked: false };
+  // Aggiorno subito, poi allineo con il database
+  state.likes[id] = { liked: !before.liked, likes: before.likes + (before.liked ? -1 : 1) };
+  refreshLike(id);
+  try { state.likes[id] = await toggleLike(id); }
+  catch { state.likes[id] = before; }
+  refreshLike(id);
+});
+
 function row(ev) {
   return `
-    <li>
-      <button data-id="${esc(ev.id)}" class="group grid w-full grid-cols-[3.75rem_1fr] gap-3 py-4 text-left sm:grid-cols-[4.5rem_1fr_auto] sm:gap-5">
+    <li class="flex items-center gap-2">
+      <button data-id="${esc(ev.id)}" class="group grid min-w-0 flex-1 grid-cols-[3.75rem_1fr] gap-3 py-4 text-left sm:grid-cols-[4.5rem_1fr_auto] sm:gap-5">
         <span class="font-display text-[1.625rem] font-extrabold leading-none tabular-nums ${ev.time ? '' : 'text-nebbia/50'}">${ev.time ? hhmm(ev.time) : '—'}</span>
         <span class="min-w-0">
           <span class="block text-[1.125rem] font-semibold leading-snug group-hover:text-porfido">${esc(ev.title)}</span>
@@ -193,6 +234,7 @@ function row(ev) {
         </span>
         <span class="hidden self-center text-sm font-semibold text-porfido opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 sm:block">Dettagli</span>
       </button>
+      ${likeButton(ev)}
     </li>`;
 }
 
@@ -231,6 +273,7 @@ function openEvent(ev) {
   $('evDesc').textContent = desc || 'Trovi programma, prezzi e biglietti sulla pagina dell’evento.';
   $('evDesc').classList.toggle('text-nebbia', !desc);
   $('evSource').textContent = ev.source ? `Fonte: ${ev.source}` : '';
+  $('evLikeSlot').innerHTML = likeButton(ev, 'border border-crinale px-4 py-2.5');
 
   const link = $('evLink');
   link.hidden = !ev.link;

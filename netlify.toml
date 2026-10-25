@@ -10,6 +10,11 @@
   to = "/admin.html"
   status = 200
 
+[[redirects]]
+  from = "/classifica"
+  to = "/classifica.html"
+  status = 200
+
 [[headers]]
   for = "/admin.html"
   [headers.values]

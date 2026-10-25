@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         admin: resolve(import.meta.dirname, 'admin.html'),
+        classifica: resolve(import.meta.dirname, 'classifica.html'),
       },
     },
   },
