@@ -68,7 +68,9 @@ $('forgot').addEventListener('click', async () => {
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/admin.html` });
   $('forgot').disabled = false;
   $('forgotMsg').textContent = error
-    ? `Email non inviata: ${error.message}`
+    ? (/rate limit/i.test(error.message)
+      ? 'Email non inviata: Supabase ne manda solo poche all’ora. Riprova tra un’ora, oppure usa quella che hai già ricevuto.'
+      : `Email non inviata: ${error.message}`)
     : `Se ${email} è un account admin, riceverai un'email con il link per scegliere una nuova password.`;
 });
 
