@@ -47,7 +47,7 @@ npm run build      # genera dist/
 | --- | --- |
 | Scegliere quante settimane mostrare | `/admin` › Settimane visibili › scegli da 1 a 8 › Salva. Il sito mostra blocchi di 7 giorni a partire da oggi (predefinito: 1). |
 | Accendere/spegnere gli avvisi | `/admin` › Avvisi prenotazione. "Ultimo mese" (30–16 giorni) e "Ultimi 15 giorni" si attivano separatamente e si salvano subito. |
-| Segnare un evento da prenotare | `/admin` › Eventi da prenotare › spunta. |
+| Avvisi di prenotazione | Automatici per classica, festival, musica dal vivo e teatro (salvo "gratuito"/"ingresso libero"), come nel Radar Concerti. Nell'agenda compare una voce "Prenota" 30 e 15 giorni prima. In `/admin` › Eventi da prenotare puoi segnalarne altri: quelli segnalati vanno anche in "Da prenotare adesso". |
 | Password dimenticata | `/admin` › scrivi l'email › "Password dimenticata?". Il link dell'email apre la pagina per scegliere la nuova password. |
 | Mi piace | Sul sito, il cuore accanto a ogni evento (e nella scheda). Un voto per evento per browser; si toglie toccandolo di nuovo. Classifica in `/classifica`. |
 | Testo WhatsApp | Solo in `/admin` › Testo WhatsApp: scegli settimana e zona, poi Copia testo. |

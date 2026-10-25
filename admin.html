@@ -78,7 +78,7 @@
 
       <section id="avvisi" class="mt-14 scroll-mt-20">
         <h2 class="font-display text-3xl font-extrabold">Avvisi prenotazione</h2>
-        <p class="mt-1 max-w-[60ch] text-nebbia">Valgono per gli eventi segnati come "da prenotare". L'avviso compare sul sito, nella sezione "Da prenotare adesso" e nel testo WhatsApp.</p>
+        <p class="mt-1 max-w-[60ch] text-nebbia">Nell'agenda compare una voce "Prenota" 30 e/o 15 giorni prima di ogni evento da prenotare. Gli avvisi valgono anche per la scheda dell'evento e per il testo WhatsApp.</p>
         <div class="mt-5 grid gap-3 sm:grid-cols-2">
           <label class="flex cursor-pointer items-start gap-4 rounded-2xl border border-crinale bg-white p-5 has-checked:border-abete">
             <input id="alertMonth" type="checkbox" class="mt-1 size-5 accent-porfido">
@@ -100,7 +100,7 @@
 
       <section id="prenotazioni" class="mt-14 scroll-mt-20">
         <h2 class="font-display text-3xl font-extrabold">Eventi da prenotare</h2>
-        <p class="mt-1 max-w-[60ch] text-nebbia">Spunta gli eventi che richiedono prenotazione. La modifica si salva subito.</p>
+        <p class="mt-1 max-w-[60ch] text-nebbia">Concerti, festival, musica dal vivo e teatro hanno già l'avviso automatico, salvo quelli gratuiti. Spunta gli altri eventi da prenotare: compariranno anche in evidenza in "Da prenotare adesso". La modifica si salva subito.</p>
         <div class="mt-5 flex flex-wrap gap-3">
           <input id="evSearch" type="search" placeholder="Cerca titolo, luogo o comune" class="min-w-0 flex-1 rounded-full border border-crinale bg-white px-4 py-2.5">
           <select id="evRange" class="rounded-full border border-crinale bg-white px-4 py-2.5">
@@ -108,7 +108,7 @@
             <option value="90" selected>Prossimi 90 giorni</option>
             <option value="365">Prossimi 12 mesi</option>
           </select>
-          <label class="flex items-center gap-2 text-sm font-medium"><input id="evOnly" type="checkbox" class="size-4 accent-porfido"> Solo da prenotare</label>
+          <label class="flex items-center gap-2 text-sm font-medium"><input id="evOnly" type="checkbox" class="size-4 accent-porfido"> Solo segnalati da me</label>
         </div>
         <p id="evCount" class="mt-3 text-sm text-nebbia"></p>
         <ul id="evList" class="mt-2 divide-y divide-crinale border-y border-crinale"></ul>

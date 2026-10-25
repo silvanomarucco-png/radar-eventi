@@ -1,6 +1,6 @@
 import { sb, loadSettings, loadEvents, DEFAULT_ALERTS, DEFAULT_WEEKS, MAX_WEEKS } from './lib/supabase.js';
 import { parseDay, isoDay, addDays, today, hhmm, dayLong, cap, weekRange, weekStarts } from './lib/dates.js';
-import { ZONE, esc, placeOf } from './lib/events.js';
+import { ZONE, esc, placeOf, isAutoBooking } from './lib/events.js';
 import { buildWhatsAppText, waPreviewHtml, copyText } from './lib/whatsapp.js';
 
 const $ = (id) => document.getElementById(id);
@@ -156,13 +156,14 @@ function renderEvents() {
     && (!$('evOnly').checked || e.booking_required)
     && (!q || [e.title, e.venue, e.comune].join(' ').toLowerCase().includes(q)));
   const flagged = list.filter((e) => e.booking_required).length;
-  $('evCount').textContent = `${list.length} eventi, ${flagged} da prenotare.`;
+  const auto = list.filter((e) => isAutoBooking(e)).length;
+  $('evCount').textContent = `${list.length} eventi: ${auto} con avviso automatico, ${flagged} segnalati da te.`;
   $('evList').innerHTML = list.slice(0, 300).map((ev) => `
     <li>
       <label class="flex cursor-pointer items-start gap-4 py-3 hover:bg-white">
         <input type="checkbox" data-id="${esc(ev.id)}" ${ev.booking_required ? 'checked' : ''} class="mt-1 size-5 shrink-0 accent-porfido">
         <span class="min-w-0">
-          <span class="block font-semibold leading-snug">${esc(ev.title)}</span>
+          <span class="block font-semibold leading-snug">${esc(ev.title)}${isAutoBooking(ev) ? ' <span class="tag ml-1 bg-enrosadira/60 align-middle text-porfido-scuro">Avviso automatico</span>' : ''}</span>
           <span class="block text-sm text-nebbia">${esc(cap(dayLong(parseDay(ev.date))))}${ev.time ? ', ' + hhmm(ev.time) : ''} · ${esc(placeOf(ev))}</span>
         </span>
       </label>

@@ -1,9 +1,9 @@
 import { sb, loadSettings, loadEvents, DEFAULT_ALERTS, DEFAULT_WEEKS } from './lib/supabase.js';
 import {
   parseDay, isoDay, addDays, today, daysUntil, hhmm,
-  weekdayShort, dayLong, cap, weekRange, weekStarts,
+  weekdayShort, monthShort, dayLong, cap, weekRange, weekStarts,
 } from './lib/dates.js';
-import { CAT, ZONE, esc, bookingNotice, placeOf, groupByDay } from './lib/events.js';
+import { CAT, ZONE, esc, bookingNotice, bookingReminders, placeOf, groupByDay } from './lib/events.js';
 import { loadLikes, toggleLike, heartSvg } from './lib/likes.js';
 
 // Link "Password dimenticata?" arrivato sulla home (Site URL di Supabase): lo passo alla pagina admin
@@ -32,7 +32,8 @@ async function init() {
     state.weeks = weekStarts(s.weeksAhead);
 
     const from = state.weeks[0];
-    const to = [isoDay(addDays(parseDay(state.weeks.at(-1)), 6)), isoDay(addDays(today(), 30))].sort().at(-1);
+    // +30 giorni oltre l'ultima settimana: servono gli eventi i cui avvisi di prenotazione cadono nel periodo
+    const to = isoDay(addDays(parseDay(state.weeks.at(-1)), 6 + 30));
     state.all = await loadEvents(from, to).catch(async () => {
       // Se la vista del nuovo sito non è ancora stata creata, usa quella esistente
       const { data, error } = await sb.from('events_app').select('*').gte('date', from).lte('date', to).order('date').order('time', { nullsFirst: false });
@@ -104,7 +105,8 @@ function renderWeek(animate = false) {
 
   const list = weekEvents();
   const total = weekEvents({ filtered: false }).length;
-  const toBook = list.filter((e) => bookingNotice(e, state.alerts)).length;
+  const reminders = weekReminders();
+  const toBook = reminders.length;
   const comuni = new Set(list.map((e) => e.comune).filter(Boolean)).size;
   const parts = [];
   if (!total) parts.push('Il programma di questi giorni non è ancora disponibile.');
@@ -112,7 +114,7 @@ function renderWeek(animate = false) {
     parts.push(list.length === total
       ? `${total} eventi in ${comuni} ${comuni === 1 ? 'comune' : 'comuni'}.`
       : `${list.length} eventi su ${total} con i filtri scelti.`);
-    if (toBook) parts.push(`${toBook} da prenotare.`);
+    if (toBook) parts.push(`${toBook} ${toBook === 1 ? 'avviso' : 'avvisi'} di prenotazione.`);
   }
   if (state.lastScan) {
     const d = new Date(state.lastScan);
@@ -120,23 +122,31 @@ function renderWeek(animate = false) {
   }
   $('summary').textContent = parts.join(' ');
 
-  renderDayStrip(list);
-  renderDays(list);
+  renderDayStrip(list, reminders);
+  renderDays(list, reminders);
 }
 
-function renderDayStrip(list) {
+function weekReminders() {
+  const end = isoDay(addDays(parseDay(state.week), 6));
+  return bookingReminders(state.all, state.alerts, state.week, end)
+    .filter(({ event: e }) => (!state.zone || e.zone === state.zone) && (!state.cat || e.cat === state.cat));
+}
+
+function renderDayStrip(list, reminders) {
   const start = parseDay(state.week);
   const counts = {};
   list.forEach((e) => (counts[e.date] = (counts[e.date] || 0) + 1));
+  const withReminders = new Set(reminders.map((r) => r.date));
   $('dayStrip').innerHTML = Array.from({ length: 7 }, (_, i) => {
     const d = addDays(start, i);
     const iso = isoDay(d);
     const n = counts[iso] || 0;
+    const open = n || withReminders.has(iso);
     const isToday = iso === isoDay(today());
     const past = d < today();
     return `
-      <a href="#g-${iso}" ${n ? '' : 'aria-disabled="true" tabindex="-1"'}
-         class="flex flex-col items-center rounded-lg py-1.5 ${n ? 'hover:bg-white' : 'pointer-events-none opacity-35'} ${past && n ? 'opacity-55' : ''} ${isToday ? 'bg-white ring-1 ring-porfido' : ''}"
+      <a href="#g-${iso}" ${open ? '' : 'aria-disabled="true" tabindex="-1"'}
+         class="flex flex-col items-center rounded-lg py-1.5 ${open ? 'hover:bg-white' : 'pointer-events-none opacity-35'} ${past && open ? 'opacity-55' : ''} ${isToday ? 'bg-white ring-1 ring-porfido' : ''}"
          aria-label="${esc(dayLong(d))}: ${n} eventi">
         <span class="text-xs text-nebbia">${weekdayShort(d)}</span>
         <span class="font-display text-2xl font-extrabold leading-none tabular-nums">${d.getDate()}</span>
@@ -145,8 +155,8 @@ function renderDayStrip(list) {
   }).join('');
 }
 
-function tags(ev, { withCat = true } = {}) {
-  const b = bookingNotice(ev, state.alerts);
+function tags(ev, { withCat = true, withBooking = true } = {}) {
+  const b = withBooking && bookingNotice(ev, state.alerts);
   return [
     b ? `<span class="tag ${b.level === 'fortnight' ? 'bg-porfido text-white' : 'bg-enrosadira text-porfido-scuro'}">${esc(b.text)}</span>` : '',
     ev.is_new ? '<span class="tag bg-abete text-white">Nuovo</span>' : '',
@@ -154,9 +164,14 @@ function tags(ev, { withCat = true } = {}) {
   ].join('');
 }
 
-function renderDays(list) {
+function renderDays(list, reminders) {
   const box = $('giorni');
   const days = groupByDay(list);
+  const remByDay = {};
+  reminders.forEach((r) => (remByDay[r.date] ||= []).push(r));
+  // Un giorno può avere solo avvisi e nessun evento
+  Object.keys(remByDay).forEach((d) => { if (!days.some(([day]) => day === d)) days.push([d, []]); });
+  days.sort((a, b) => a[0].localeCompare(b[0]));
   if (!days.length) {
     const filtered = state.zone || state.cat;
     box.innerHTML = `
@@ -176,13 +191,26 @@ function renderDays(list) {
         ${daysUntil(day) === 0 ? '<span class="ml-2 align-middle font-sans text-sm font-semibold text-porfido">oggi</span>' : ''}
         ${past ? '<span class="ml-2 align-middle font-sans text-sm font-medium text-nebbia">concluso</span>' : ''}
       </h2>
-      <ul class="mt-3 divide-y divide-crinale border-y border-crinale">
-        ${evs.map(row).join('')}
-      </ul>
+      ${evs.length ? `<ul class="mt-3 divide-y divide-crinale border-y border-crinale">${evs.map(row).join('')}</ul>` : ''}
+      ${remByDay[day] ? `<ul class="mt-2 grid gap-1" aria-label="Avvisi di prenotazione">${remByDay[day].map(reminderRow).join('')}</ul>` : ''}
     </section>`;
   }).join('');
   box.querySelectorAll('button[data-id]').forEach((b) =>
     b.addEventListener('click', () => openEvent(state.all.find((e) => e.id === b.dataset.id))));
+}
+
+// Avviso di prenotazione: voce compatta, interlinea stretta, porta alla scheda dell'evento
+function reminderRow(r) {
+  const ev = r.event;
+  const d = parseDay(ev.date);
+  const when = `${weekdayShort(d)} ${d.getDate()} ${monthShort(d)}${ev.time ? ' ' + hhmm(ev.time) : ''}`;
+  return `
+    <li>
+      <button data-id="${esc(ev.id)}" class="grid w-full grid-cols-[3.75rem_1fr] items-baseline gap-3 rounded-lg px-2 py-1.5 text-left text-[0.875rem] leading-tight sm:grid-cols-[4.5rem_1fr] sm:gap-5 ${r.level === 'fortnight' ? 'bg-enrosadira/70' : 'bg-enrosadira/35'} hover:bg-enrosadira">
+        <span class="font-semibold text-porfido">Prenota</span>
+        <span class="min-w-0"><span class="font-semibold">${esc(ev.title)}</span> <span class="text-nebbia">· ${esc(when)}, ${esc(placeOf(ev))}</span> <span class="whitespace-nowrap font-medium text-porfido-scuro">· ${esc(r.text)}</span></span>
+      </button>
+    </li>`;
 }
 
 /* ---------- Mi piace ---------- */
@@ -230,7 +258,7 @@ function row(ev) {
         <span class="min-w-0">
           <span class="block text-[1.125rem] font-semibold leading-snug group-hover:text-porfido">${esc(ev.title)}</span>
           <span class="mt-0.5 block text-[0.9375rem] text-nebbia">${esc(placeOf(ev))}</span>
-          <span class="mt-2 flex flex-wrap gap-1.5">${tags(ev)}</span>
+          <span class="mt-2 flex flex-wrap gap-1.5">${tags(ev, { withBooking: false })}</span>
         </span>
         <span class="hidden self-center text-sm font-semibold text-porfido opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 sm:block">Dettagli</span>
       </button>
@@ -240,7 +268,8 @@ function row(ev) {
 
 function renderBookingRail() {
   const soon = state.all
-    .filter((e) => daysUntil(e.date) >= 0 && bookingNotice(e, state.alerts))
+    // Solo gli eventi segnalati dall'admin: gli avvisi automatici stanno già nell'agenda
+    .filter((e) => e.booking_required && daysUntil(e.date) >= 0 && bookingNotice(e, state.alerts))
     .sort((a, b) => a.date.localeCompare(b.date));
   $('bookingRail').classList.toggle('hidden', !soon.length);
   $('bookingList').innerHTML = soon.map((ev) => {
